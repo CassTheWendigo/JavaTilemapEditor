@@ -1,7 +1,7 @@
 # JavaTilemapEditor
 This is an eclipse project for a java tilemap-editor.<br>
 **Please supply _your own_ tiles. This _does not_ come with pre-packaged tiles.**<br>
-Tiles should be placed within the /res/tiles/ folder.
+Tiles should be placed within the /res/tiles/ folder. Folders of tiles can be placed in that directory.<br>
 
 # Features / Controls
 
