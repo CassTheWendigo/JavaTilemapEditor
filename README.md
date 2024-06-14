@@ -32,6 +32,14 @@ Tiles should be placed within the /res/tiles/ folder. Folders of tiles can be pl
 2. <ins>Brush Menu</ins>
     - Toggle Preview - Toggles whether or not a preview will be displayed.
     - Preview Transparency - Changes the transparency of the preview being displayed.
+    - Toggle Stamp - Toggles whether or not the current selected stamp will be painted.
+    - Stamp Creation Menu - Enables the user to create paintable stamps.
+      - Width - Sets the width of the stamp.
+      - Height - Sets the height of the stamp.
+      - Create Grid - Creates the paintable stamp grid.
+      - Save Stamp - Save the stamp currently being created into the stamp pattern array.
+      - Back Arrow - Indexes backwards through the stamp pattern array, with wrap.
+      - Forward Arrow - Indexes Forwards through the stamp pattern array, with wrap.
 
 3. <ins>Miscellaneous</ins>
     - Current Selected Tile - Purely Visual, located in the menu bar. Displays the current selected tile and its index.
