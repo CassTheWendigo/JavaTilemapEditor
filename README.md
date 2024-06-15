@@ -40,6 +40,13 @@ Tiles should be placed within the /res/tiles/ folder. Folders of tiles can be pl
       - Save Stamp - Save the stamp currently being created into the stamp pattern array.
       - Back Arrow - Indexes backwards through the stamp pattern array, with wrap.
       - Forward Arrow - Indexes Forwards through the stamp pattern array, with wrap.
+        
+3. <ins>View Menu</ins>
+     - Reset View - Resets the view position and zoom.
+     - Reset Position - Just resets the view position.
+     - Reset Zoom - Just resets the zoom.
+     - Zoom + - Zooms in slightly.
+     - Zoom - - Zooms out slightly.
 
-3. <ins>Miscellaneous</ins>
+4. <ins>Miscellaneous</ins>
     - Current Selected Tile - Purely Visual, located in the menu bar. Displays the current selected tile and its index.
