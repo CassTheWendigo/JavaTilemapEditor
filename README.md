@@ -37,9 +37,8 @@ Tiles should be placed within the /res/tiles/ folder. Folders of tiles can be pl
       - Width - Sets the width of the stamp.
       - Height - Sets the height of the stamp.
       - Create Grid - Creates the paintable stamp grid.
-      - Save Stamp - Save the stamp currently being created into the stamp pattern array.
-      - Back Arrow - Indexes backwards through the stamp pattern array, with wrap.
-      - Forward Arrow - Indexes Forwards through the stamp pattern array, with wrap.
+      - Save to File - Saves the stamp with the indicated name and file type (".dat" files are expected).
+      - Load from File - Loads the selected file as a stamp, into the stamp pattern array.
         
 3. <ins>View Menu</ins>
      - Reset View - Resets the view position and zoom.
