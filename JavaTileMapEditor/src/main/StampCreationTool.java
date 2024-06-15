@@ -10,7 +10,10 @@ import java.util.List;
 import javax.swing.*;
 
 public class StampCreationTool extends JFrame {
-    private int gridWidth;
+ 
+	private static final long serialVersionUID = 1L;
+
+	private int gridWidth;
 
     private int gridHeight;
 
@@ -56,7 +59,10 @@ public class StampCreationTool extends JFrame {
         getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_Q, 0), "decrement");
 
         getRootPane().getActionMap().put("decrement", new AbstractAction() {
-            @Override
+
+			private static final long serialVersionUID = 1L;
+
+			@Override
             public void actionPerformed(ActionEvent e) {
             	
                 tileVisualizer.selectedTileIndex = (tileVisualizer.selectedTileIndex - 1 + tileVisualizer.tilePaths.length) % tileVisualizer.tilePaths.length;
@@ -68,7 +74,10 @@ public class StampCreationTool extends JFrame {
         getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_E, 0), "increment");
 
         getRootPane().getActionMap().put("increment", new AbstractAction() {
-            @Override
+
+			private static final long serialVersionUID = 1L;
+
+			@Override
             public void actionPerformed(ActionEvent e) {
             	
                 tileVisualizer.selectedTileIndex = (tileVisualizer.selectedTileIndex + 1) % tileVisualizer.tilePaths.length;
@@ -80,7 +89,10 @@ public class StampCreationTool extends JFrame {
         getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_D, 0), "closeContextMenu");
 
         getRootPane().getActionMap().put("closeContextMenu", new AbstractAction() {
-            @Override
+
+			private static final long serialVersionUID = 1L;
+
+			@Override
             public void actionPerformed(ActionEvent e) {
             	
                 if (tileVisualizer.subMenu != null) {
@@ -271,8 +283,6 @@ public class StampCreationTool extends JFrame {
                     @Override
                     public void mouseEntered(MouseEvent e) {
                     	
-                        int[][] currentStamp = stampTool.getStampPattern(currentStampIndex);
-
                         tileLabel.setIcon(new ImageIcon(translucentTileImages[tileVisualizer.selectedTileIndex].getScaledInstance(tileSize, tileSize, Image.SCALE_DEFAULT)));
                     }
 

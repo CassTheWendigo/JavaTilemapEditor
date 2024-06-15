@@ -13,7 +13,9 @@ import javax.swing.event.PopupMenuListener;
 
 public class TileVisualizer extends JPanel {
 	
-    String[] tilePaths;
+	private static final long serialVersionUID = 1L;
+
+	String[] tilePaths;
     
     BufferedImage[] tileImages;
     
@@ -583,7 +585,7 @@ public class TileVisualizer extends JPanel {
                 }
             }
         }
-
+        
         return paths.toArray(new String[0]);
     }
 
@@ -942,6 +944,19 @@ public class TileVisualizer extends JPanel {
     public double getZoomLevel() {
     	
         return zoomLevel;
+    }
+    
+    public void zoomIn() {
+    	
+    	setZoomLevel(getZoomLevel() + .1);
+    }
+    
+    public void zoomOut() {
+    	
+    	if (getZoomLevel() > .1f) {
+    		
+    		setZoomLevel(getZoomLevel() - .1);
+    	}
     }
 
     public void setZoomLevel(double zoomLevel) {

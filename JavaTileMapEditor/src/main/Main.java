@@ -10,7 +10,6 @@ import java.awt.Insets;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -36,7 +35,6 @@ import javax.swing.JSlider;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -182,7 +180,7 @@ public class Main {
                     
                     int sizeY = Integer.parseInt(yField.getText());
                     
-                    visualizer.setMap(visualizer.createMap(sizeX, sizeY));
+                    visualizer.setMap(TileVisualizer.createMap(sizeX, sizeY));
                     
                     visualizer.setCurrentMapState(visualizer.copyMap(visualizer.getMap()));
                     
@@ -207,6 +205,81 @@ public class Main {
 
         menuBar.add(fileMenu);
 
+        JMenu viewMenu = new JMenu("View");
+        
+        JMenuItem resetViewMenuItem = new JMenuItem("Reset View");
+        
+        resetViewMenuItem.addActionListener(new ActionListener() {
+        	
+            @Override
+            public void actionPerformed(ActionEvent e) {
+            	
+                visualizer.viewPosition = new Point(0,0);
+                visualizer.zoomLevel = 1f;
+                visualizer.repaint();
+            }
+        });
+        
+        viewMenu.add(resetViewMenuItem);
+        
+        JMenuItem resetPositionMenuItem = new JMenuItem("Reset Position");
+        
+        resetPositionMenuItem.addActionListener(new ActionListener() {
+        	
+            @Override
+            public void actionPerformed(ActionEvent e) {
+            	
+                visualizer.viewPosition = new Point(0,0);
+                visualizer.repaint();
+            }
+        });
+        
+        viewMenu.add(resetPositionMenuItem);
+        
+        JMenuItem resetZoomMenuItem = new JMenuItem("Reset Zoom");
+        
+        resetZoomMenuItem.addActionListener(new ActionListener() {
+        	
+            @Override
+            public void actionPerformed(ActionEvent e) {
+            	
+                visualizer.zoomLevel = 1f;
+                visualizer.repaint();
+            }
+        });
+        
+        viewMenu.add(resetZoomMenuItem);
+        
+        JMenuItem zoomInMenuItem = new JMenuItem("Zoom +");
+        
+        zoomInMenuItem.addActionListener(new ActionListener() {
+        	
+            @Override
+            public void actionPerformed(ActionEvent e) {
+            	
+                visualizer.zoomIn();
+                visualizer.repaint();
+            }
+        });
+        
+        viewMenu.add(zoomInMenuItem);
+        
+        JMenuItem zoomOutMenuItem = new JMenuItem("Zoom -");
+        
+        zoomOutMenuItem.addActionListener(new ActionListener() {
+        	
+            @Override
+            public void actionPerformed(ActionEvent e) {
+            	
+                visualizer.zoomOut();
+                visualizer.repaint();
+            }
+        });
+        
+        viewMenu.add(zoomOutMenuItem);
+        
+        menuBar.add(viewMenu);
+        
         JMenu brushMenu = new JMenu("Brush");
 
         JRadioButtonMenuItem previewMenuItem = new JRadioButtonMenuItem("Toggle Preview");
@@ -332,6 +405,8 @@ public class Main {
 
         JMenuItem selectedTileMenuItem = new JMenuItem() {
         	
+            private static final long serialVersionUID = 1L;
+
             @Override
             public void paint(Graphics g) {
             	
@@ -340,14 +415,12 @@ public class Main {
                 String labelText = "Selected Tile: " + visualizer.selectedTileIndex + " ";
                 
                 BufferedImage iconImage = visualizer.getSelectedTileIcon();
-                
+
                 if (iconImage != null) {
                 	
                     FontMetrics fontMetrics = g.getFontMetrics();
                     
                     int textWidth = fontMetrics.stringWidth(labelText);
-                    
-                    int totalWidth = textWidth + 10;
                     
                     int textX = 10;
                     
@@ -380,7 +453,7 @@ public class Main {
                 
                 int textWidth = fontMetrics.stringWidth(labelText);
                 
-                int iconWidth = iconImage != null ? iconImage.getWidth() : 0;
+                int iconWidth = (iconImage != null) ? iconImage.getWidth() : 0;
                 
                 int totalWidth = textWidth + iconWidth + 20;
                 
@@ -388,6 +461,9 @@ public class Main {
             }
         };
 
+        menuBar.add(selectedTileMenuItem);
+
+        
         visualizer.addMouseListener(new MouseAdapter() {
         	
             @Override
@@ -417,7 +493,9 @@ public class Main {
 
         Action decrementAction = new AbstractAction() {
         	
-            @Override
+			private static final long serialVersionUID = 1L;
+
+			@Override
             public void actionPerformed(ActionEvent e) {
             	
                 visualizer.selectedTileIndex = (visualizer.selectedTileIndex - 1 + tilePaths.length) % tilePaths.length;
@@ -430,7 +508,9 @@ public class Main {
 
         Action incrementAction = new AbstractAction() {
         	
-            @Override
+			private static final long serialVersionUID = 1L;
+
+			@Override
             public void actionPerformed(ActionEvent e) {
             	
                 visualizer.selectedTileIndex = (visualizer.selectedTileIndex + 1) % tilePaths.length;
@@ -443,7 +523,9 @@ public class Main {
 
         Action closeAction = new AbstractAction() {
         	
-            @Override
+			private static final long serialVersionUID = 1L;
+
+			@Override
             public void actionPerformed(ActionEvent e) {
             	
                 if (visualizer.subMenu != null) {
@@ -455,7 +537,9 @@ public class Main {
 
         Action undoAction = new AbstractAction() {
         	
-            @Override
+			private static final long serialVersionUID = 1L;
+
+			@Override
             public void actionPerformed(ActionEvent e) {
             	
                 visualizer.undo();
@@ -464,7 +548,9 @@ public class Main {
 
         Action redoAction = new AbstractAction() {
         	
-            @Override
+			private static final long serialVersionUID = 1L;
+
+			@Override
             public void actionPerformed(ActionEvent e) {
             	
                 visualizer.redo();
@@ -490,8 +576,6 @@ public class Main {
         visualizer.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_Y, KeyEvent.CTRL_DOWN_MASK), "redo");
         
         visualizer.getActionMap().put("redo", redoAction);
-
-        menuBar.add(selectedTileMenuItem);
 
         visualizer.addPropertyChangeListener(new PropertyChangeListener() {
         	

@@ -77,9 +77,7 @@ public class ContextMenu {
 
             contextMenu.removeAll();
 
-            Map<String, List<Integer>> folderMap = tileVisualizer.createFolderMap(tileVisualizer.tilePaths);
-            
-            for (String folder : tileVisualizer.getInitialFolders()) {
+            for (String folder : TileVisualizer.getInitialFolders()) {
             	
                 JMenuItem folderMenuItem = new JMenuItem(folder);
                 
