@@ -8,7 +8,6 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Point;
-import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -91,43 +90,28 @@ public class Main {
         
         JMenuItem saveMenuItem = new JMenuItem("Save");
         
-        saveMenuItem.addActionListener(new ActionListener() {
+        saveMenuItem.addActionListener(e -> {
         	
-            @Override
-            public void actionPerformed(ActionEvent e) {
-            	
-            	if (visualizer.isFileOpen && visualizer.mapFilePath != null) {
-            		
-            		visualizer.saveMapToFile(visualizer.mapFilePath);
-            	}
-            	else {
-            		
-                    visualizer.saveMapToFile("res/maps/map0.txt");	
-            	}
-            }
+            String filePath = (visualizer.isFileOpen && visualizer.mapFilePath != null) ? visualizer.mapFilePath : "res/maps/map0.txt";
+            
+            visualizer.saveMapToFile(filePath);
         });
         
         fileMenu.add(saveMenuItem);
 
         JMenuItem saveAsMenuItem = new JMenuItem("Save As");
-        
-        saveAsMenuItem.addActionListener(new ActionListener() {
+
+        saveAsMenuItem.addActionListener(e -> {
         	
-            @Override
-            public void actionPerformed(ActionEvent e) {
+            JFileChooser fileChooser = new JFileChooser(new File("res"));
+            
+            int returnValue = fileChooser.showSaveDialog(null);
+            
+            if (returnValue == JFileChooser.APPROVE_OPTION) {
             	
-                JFileChooser fileChooser = new JFileChooser();
+                File selectedFile = fileChooser.getSelectedFile();
                 
-                int returnValue = fileChooser.showSaveDialog(null);
-                
-                if (returnValue == JFileChooser.APPROVE_OPTION) {
-                	
-                    File selectedFile = fileChooser.getSelectedFile();
-                    
-                    String filePath = selectedFile.getAbsolutePath();
-                    
-                    visualizer.saveMapToFile(filePath);
-                }
+                visualizer.saveMapToFile(selectedFile.getAbsolutePath());
             }
         });
         
@@ -135,46 +119,41 @@ public class Main {
 
         JMenuItem openMenuItem = new JMenuItem("Open Map");
         
-        openMenuItem.addActionListener(new ActionListener() {
 
-			@Override
-            public void actionPerformed(ActionEvent e) {
+        openMenuItem.addActionListener(e -> {
+            JFileChooser fileChooser = new JFileChooser(new File("res"));
+            
+            int returnValue = fileChooser.showOpenDialog(null);
+            
+            if (returnValue == JFileChooser.APPROVE_OPTION) {
             	
-                JFileChooser fileChooser = new JFileChooser();
+                File selectedFile = fileChooser.getSelectedFile();
                 
-                int returnValue = fileChooser.showOpenDialog(null);
+                int[][] newMap = TileVisualizer.loadMapFromAbsolutePath(selectedFile.getAbsolutePath());
                 
-                if (returnValue == JFileChooser.APPROVE_OPTION) {
+                if (newMap != null) {
                 	
-                    File selectedFile = fileChooser.getSelectedFile();
+                    visualizer.mapFilePath = selectedFile.getAbsolutePath();
                     
-                    String filePath = selectedFile.getAbsolutePath();
+                    visualizer.numCols = newMap[0].length;
                     
-                    int[][] newMap = TileVisualizer.loadMapFromAbsolutePath(filePath);
+                    visualizer.numRows = newMap.length;
                     
-                    if (newMap != null) {
-                    	
-                    	visualizer.mapFilePath = filePath;
-                    	
-                    	visualizer.numCols = newMap[0].length;
-                    	visualizer.numRows = newMap.length;
-                    	
-                        visualizer.setMap(newMap);
-                        
-                        visualizer.setCurrentMapState(visualizer.copyMap(newMap));
-                        
-                        visualizer.setViewPosition(new Point(0, 0));
-                        
-                        visualizer.setZoomLevel(1);
-                        
-                        visualizer.isFileOpen = true;
-                        
-                        visualizer.repaint();
-                    } 
-                    else {
-                    	
-                        JOptionPane.showMessageDialog(null, "Error loading map from file.", "Error", JOptionPane.ERROR_MESSAGE);
-                    }
+                    visualizer.setMap(newMap);
+                    
+                    visualizer.setCurrentMapState(visualizer.copyMap(newMap));
+                    
+                    visualizer.setViewPosition(new Point(0, 0));
+                    
+                    visualizer.setZoomLevel(1);
+                    
+                    visualizer.isFileOpen = true;
+                    
+                    visualizer.repaint();
+                } 
+                else {
+                	
+                    JOptionPane.showMessageDialog(null, "Error loading map from file.", "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
