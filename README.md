@@ -50,6 +50,6 @@ Tiles should be placed within the /res/tiles/ folder. Folders of tiles can be pl
      - Zoom - - Zooms out slightly.
 
 4. <ins>Miscellaneous</ins>
-    - Current Selected Tile - Purely Visual, located in the menu bar. Displays the current selected tile and its index.
+    - Current Selected Tile - Purely Visual, located in the menu bar. Displays the current selected tile, if it currently has collision, and its index.
 
 *Collision is achieved by adding the base number of tiles to the current index, essentially doubling the total numbers of tiles. You should account for this when making your game. For example, if you have ten tiles then number eleven is the zero index of the original tiles, just with collision.
