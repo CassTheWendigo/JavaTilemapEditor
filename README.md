@@ -32,7 +32,7 @@ Tiles should be placed within the /res/tiles/ folder. Folders of tiles can be pl
 
 2. <ins>Brush Menu</ins>
     - Toggle Preview - Toggles whether or not a preview will be displayed.
-    - Preview Transparency - Changes the transparency of the preview being displayed.
+    - Toggle Collision - Toggles whether or not the painted tile will have collision*.
     - Toggle Stamp - Toggles whether or not the current selected stamp will be painted.
     - Stamp Creation Menu - Enables the user to create paintable stamps.
       - Width - Sets the width of the stamp.
@@ -40,6 +40,7 @@ Tiles should be placed within the /res/tiles/ folder. Folders of tiles can be pl
       - Create Grid - Creates the paintable stamp grid.
       - Save to File - Saves the stamp with the indicated name and file type (".dat" files are expected).
       - Load from File - Loads the selected file as a stamp, into the stamp pattern array.
+    - Preview Transparency - Changes the transparency of the preview being displayed.
         
 3. <ins>View Menu</ins>
      - Reset View - Resets the view position and zoom.
@@ -50,3 +51,5 @@ Tiles should be placed within the /res/tiles/ folder. Folders of tiles can be pl
 
 4. <ins>Miscellaneous</ins>
     - Current Selected Tile - Purely Visual, located in the menu bar. Displays the current selected tile and its index.
+
+*Collision is achieved by adding the base number of tiles to the current index, essentially doubling the total numbers of tiles. You should account for this when making your game. For example, if you have ten tiles then number eleven is the zero index of the original tiles, just with collision.
