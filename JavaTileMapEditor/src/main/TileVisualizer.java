@@ -8,16 +8,22 @@ import java.util.*;
 import java.util.List;
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.event.PopupMenuEvent;
-import javax.swing.event.PopupMenuListener;
+import menu.CustomLabelRenderer;
+import menu.CustomPanelRenderer;
+import menu.CustomPopupMenuRenderer;
+import stamps.StampCreationTool;
+import stamps.StampTile;
+import stamps.StampTool;
 
-public class TileVisualizer extends JPanel {
+public class TileVisualizer extends CustomPanelRenderer {
 	
 	private static final long serialVersionUID = 1L;
 
-	String[] tilePaths;
+	public String[] tilePaths;
     
-    BufferedImage[] tileImages;
+    public BufferedImage[] tileImages;
+    
+    public BufferedImage[] originalTileImages;
     
     int[][] map;
     
@@ -31,15 +37,15 @@ public class TileVisualizer extends JPanel {
     
     int tileSize = 50;
     
-    int selectedTileIndex = 0;
+    public int selectedTileIndex = 0;
     
     int spacing = 10;
     
-    Point viewPosition;
+    Point viewPosition = new Point(0, 0);
     
-    JLabel selectedTileIconLabel;
+    CustomLabelRenderer selectedTileIconLabel;
     
-    boolean isContextMenuVisible = false;
+    public boolean isInContextMenu = false;
     
     boolean isSubMenuVisible = false;
     
@@ -53,17 +59,21 @@ public class TileVisualizer extends JPanel {
     
     int[][] currentMapState;
     
-    JPopupMenu subMenu;
+    public CustomPopupMenuRenderer subMenu;
     
     double zoomLevel = 1.0;
     
     static Set<String> initialFolders = null;
     
-    Point mousePosition;
+    public Point mousePosition;
     
-    boolean showPreview = true;
+    public boolean showPreview = true;
     
-    float previewTransparency = 0.5f;
+    public boolean collision = false;
+    
+    public int originalTileSize;
+    
+    public float previewTransparency = 0.5f;
     
     List<StampTile> stampTiles = new ArrayList<>();
     
@@ -75,9 +85,11 @@ public class TileVisualizer extends JPanel {
     
     ContextMenu contextMenu;
     
-    boolean isInMenuBar;
+    public boolean isInMenuBar;
 
     public TileVisualizer(String[] tilePaths, int[][] map, int viewX, int viewY, ContextMenu contextMenu) {
+    	
+    	super(52, 37, 47);
     	
         this.tilePaths = tilePaths;
         
@@ -89,7 +101,7 @@ public class TileVisualizer extends JPanel {
         
         this.setCurrentMapState(copyMap(map));
         
-        this.selectedTileIconLabel = new JLabel();
+        this.selectedTileIconLabel = new CustomLabelRenderer();
         
         this.selectedTileIconLabel.setPreferredSize(new Dimension(32, 32));
 
@@ -126,6 +138,8 @@ public class TileVisualizer extends JPanel {
         
         setCurrentMapState(copyMap(newMapState));
         
+        checkCollision();
+        
         redoStack.clear();
     }
 
@@ -138,6 +152,8 @@ public class TileVisualizer extends JPanel {
             redoStack.push(copyMap(getCurrentMapState()));
             
             setMap(copyMap(previousState));
+            
+            checkCollision();
             
             repaint();
             
@@ -154,6 +170,8 @@ public class TileVisualizer extends JPanel {
             undoStack.push(copyMap(getCurrentMapState()));
             
             setMap(nextState);
+            
+            checkCollision();
             
             repaint();
             
@@ -180,6 +198,9 @@ public class TileVisualizer extends JPanel {
                 	
                     contextMenu.showContextMenu(e);
                 }
+                
+            	
+                checkCollision();
             }
 
             @Override
@@ -191,6 +212,9 @@ public class TileVisualizer extends JPanel {
                 }
                 
                 updateSelectedTileIcon();
+                
+            	
+                checkCollision();
             }
 
             boolean isInMenu() {
@@ -198,10 +222,6 @@ public class TileVisualizer extends JPanel {
             	if (subMenu != null) {
             		
             		return subMenu.isVisible();
-            	}
-            	else if (stampCreationTool != null) {
-            		
-            		return stampCreationTool.isVisible();
             	}
             	else {
             		
@@ -217,7 +237,7 @@ public class TileVisualizer extends JPanel {
 
                 int col = (mouseX - 20) / (tileSize + spacing);
                 
-                int row = (mouseY - 50) / (tileSize + spacing);
+                int row = (mouseY - 20) / (tileSize + spacing);
                 
                 if (col >= 0 && col < numCols && row >= 0 && row < numRows) {
                     
@@ -250,8 +270,6 @@ public class TileVisualizer extends JPanel {
                 		
                         getMap()[row][col] = selectedTileIndex;
                     }
-
-                    isContextMenuVisible = false;
                     
                     updateSelectedTileIcon();
                     
@@ -279,7 +297,7 @@ public class TileVisualizer extends JPanel {
                 
                 int col = (x - 20) / (int) (tileSize + spacing);
                 
-                int row = (y - 50) / (int) (tileSize + spacing);
+                int row = (y - 20) / (int) (tileSize + spacing);
 
                 if (e.isControlDown()) {
                 	
@@ -290,9 +308,7 @@ public class TileVisualizer extends JPanel {
                     if (col >= 0 && col < numCols && row >= 0 && row < numRows && !isInMenu()) {
                     	
                         selectedTileIndex = getMap()[row][col];
-                        
-                        isContextMenuVisible = false;
-                        
+
                         updateSelectedTileIcon();
                         
                         repaint();
@@ -304,6 +320,8 @@ public class TileVisualizer extends JPanel {
 
     public int getSelectedTileIndex() {
     	
+        checkCollision();
+    	
         return selectedTileIndex;
     }
 
@@ -314,7 +332,9 @@ public class TileVisualizer extends JPanel {
             @Override
             public void mouseDragged(MouseEvent e) {
             	
-                if (mousePressed && !isContextMenuVisible && SwingUtilities.isMiddleMouseButton(e) && e.isControlDown()) {
+                checkCollision();
+            	
+                if (mousePressed && !isInContextMenu && SwingUtilities.isMiddleMouseButton(e) && e.isControlDown()) {
                 	
                     int dx = e.getX() - lastX;
                     
@@ -333,16 +353,15 @@ public class TileVisualizer extends JPanel {
             @Override
             public void mouseMoved(MouseEvent e) {
             	
-                if (!isContextMenuVisible) {
-                	
-                    int scaledX = (int) ((e.getX() + getViewPosition().x) / getZoomLevel());
-                    
-                    int scaledY = (int) ((e.getY() + getViewPosition().y) / getZoomLevel());
-                    
-                    mousePosition = new Point(scaledX, scaledY);
-                    
-                    repaint();
-                }
+                checkCollision();
+            	
+                int scaledX = (int) ((e.getX() + getViewPosition().x) / getZoomLevel());
+                
+                int scaledY = (int) ((e.getY() + getViewPosition().y) / getZoomLevel());
+                
+                mousePosition = new Point(scaledX, scaledY);
+                
+                repaint();
             }
         };
     }
@@ -355,7 +374,7 @@ public class TileVisualizer extends JPanel {
             
             public void mouseWheelMoved(MouseWheelEvent e) {
             	
-                if (!isContextMenuVisible && e.isControlDown()) {
+                if (!isInContextMenu && e.isControlDown()) {
                 	
                     int mouseX = e.getX();
                     
@@ -381,8 +400,18 @@ public class TileVisualizer extends JPanel {
                     
                     viewPosition.y = (int) ((viewPosition.y + mouseY) * scale - newMouseY);
 
-                    repaint();
+                    repaint();              
                 }
+                
+                checkCollision();
+            	
+                int scaledX = (int) ((e.getX() + getViewPosition().x) / getZoomLevel());
+                
+                int scaledY = (int) ((e.getY() + getViewPosition().y) / getZoomLevel());
+                
+                mousePosition = new Point(scaledX, scaledY);
+                
+                repaint();
             }
         };
     }
@@ -423,8 +452,15 @@ public class TileVisualizer extends JPanel {
         }
     }
 
-    void updateSelectedTileIcon() {
+    public void updateSelectedTileIcon() {
 
+    	if (selectedTileIndex >= (tilePaths.length / 2)) {
+    		collision = true;
+    	}
+    	else {
+    		collision = false;
+    	}
+    	
         if (tileImages == null || tileImages.length == 0) {
         	
             return;
@@ -475,55 +511,6 @@ public class TileVisualizer extends JPanel {
         }
     }
 
-    class ContextMenuListener implements PopupMenuListener 
-    {
-        @Override
-        public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
-        	
-            isContextMenuVisible = true;
-        }
-
-        @Override
-        public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
-        	
-            isContextMenuVisible = false;
-            
-            if (!isSubMenuVisible) {
-            	
-                subMenu.setVisible(false);
-            }
-        }
-
-        @Override
-        public void popupMenuCanceled(PopupMenuEvent e) {
-        	
-            isContextMenuVisible = false;
-        }
-    }
-
-    class SubMenuListener implements PopupMenuListener {
-    	
-        @Override
-        public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
-        	
-            isSubMenuVisible = true;
-        }
-
-        @Override
-        public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
-        	
-            isSubMenuVisible = false;
-            
-            isContextMenuVisible = false;
-        }
-
-        @Override
-        public void popupMenuCanceled(PopupMenuEvent e) {
-        	
-            isSubMenuVisible = false;
-        }
-    }
-
     public static Set<String> getInitialFolders(String tilesDirectoryPath) {
     	
         Set<String> initialFolders = new LinkedHashSet<>();
@@ -548,6 +535,7 @@ public class TileVisualizer extends JPanel {
         return initialFolders;
     }
 
+
     public static String[] generateTilePaths(Set<String> initialFolders) {
     	
         List<String> paths = new ArrayList<>();
@@ -555,40 +543,50 @@ public class TileVisualizer extends JPanel {
         String tilesFolderPath = "res" + File.separator + "tiles" + File.separator;
 
         File mainTilesFolder = new File(tilesFolderPath);
-        
+
         File[] mainTileFiles = mainTilesFolder.listFiles((dir, name) -> name.toLowerCase().endsWith(".png"));
-        
+
         if (mainTileFiles != null) {
         	
             Arrays.sort(mainTileFiles, Comparator.comparing(File::getName, new AlphanumericComparator()));
 
             for (File tileFile : mainTileFiles) {
+            	
+                String relativePath = "/tiles/" + tileFile.getName();
+                
+                paths.add(relativePath);
+            }
 
+            for (File tileFile : mainTileFiles) {
+            	
                 String relativePath = "/tiles/" + tileFile.getName();
                 
                 paths.add(relativePath);
             }
         }
 
-        for (String folder : initialFolders) {
+        for (int pass = 0; pass < 2; pass++) {
         	
-            File folderDir = new File(tilesFolderPath, folder);
-            
-            File[] tileFiles = folderDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".png"));
-            
-            if (tileFiles != null) {
+            for (String folder : initialFolders) {
             	
-                Arrays.sort(tileFiles, Comparator.comparing(File::getName, new AlphanumericComparator()));
+                File folderDir = new File(tilesFolderPath, folder);
 
-                for (File tileFile : tileFiles) {
+                File[] tileFiles = folderDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".png"));
 
-                    String relativePath = "/tiles/" + folder + "/" + tileFile.getName();
-                    
-                    paths.add(relativePath);
+                if (tileFiles != null) {
+                	
+                    Arrays.sort(tileFiles, Comparator.comparing(File::getName, new AlphanumericComparator()));
+
+                    for (File tileFile : tileFiles) {
+                    	
+                        String relativePath = "/tiles/" + folder + "/" + tileFile.getName();
+                        
+                        paths.add(relativePath);
+                    }
                 }
             }
         }
-        
+
         return paths.toArray(new String[0]);
     }
 
@@ -653,16 +651,6 @@ public class TileVisualizer extends JPanel {
         return folderMap;
     }
 
-    public void openStampCreationTool() {
-    	
-        stampCreationTool.setVisible(true);
-    }
-
-    public boolean isStampToolActive() {
-    	
-        return stampToolActive;
-    }
-
     @Override
     protected void paintComponent(Graphics g) {
     	
@@ -684,14 +672,29 @@ public class TileVisualizer extends JPanel {
                     
                     int x = col * (tileSize + spacing) + 20;
                     
-                    int y = row * (tileSize + spacing) + 50;
+                    int y = row * (tileSize + spacing) + 20;
+
+                    int drawX = x - (int) (getViewPosition().x / getZoomLevel());
                     
-                    g2d.drawImage(tileImage, x - (int) (getViewPosition().x / getZoomLevel()), y - (int) (getViewPosition().y / getZoomLevel()), tileSize, tileSize, null);
+                    int drawY = y - (int) (getViewPosition().y / getZoomLevel());
+
+                    if (tileIndex >= tilePaths.length / 2) {
+
+                        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+                        
+                        g2d.setColor(new Color(255, 192, 203));
+                        
+                        g2d.fillRect(drawX, drawY, tileSize, tileSize);
+                    }
+
+                    g2d.drawImage(tileImage, drawX, drawY, tileSize, tileSize, null);
+
+                    g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
                 }
             }
         }
 
-        if (showPreview && !stampCreationTool.isVisible() && mousePosition != null) {
+        if (showPreview && mousePosition != null) {
         	
             int previewX = mousePosition.x;
             
@@ -699,17 +702,17 @@ public class TileVisualizer extends JPanel {
             
             int col = (previewX - 20) / (tileSize + spacing);
             
-            int row = (previewY - 50) / (tileSize + spacing);
+            int row = (previewY - 20) / (tileSize + spacing);
 
             if (col >= 0 && col < numCols && row >= 0 && row < numRows) {
             	
                 if (stampTool.isActive() && stampTool.getStampPattern(stampTool.currentStampIndex) != null) {
-                    
+                   
                 	int[][] stamp = stampTool.getStampPattern(stampTool.currentStampIndex);
+                	
+                    int stampRows = stamp.length;
                     
-                	int stampRows = stamp.length;
-                    
-                	int stampCols = stamp[0].length;
+                    int stampCols = stamp[0].length;
 
                     for (int i = 0; i < stampRows; i++) {
                     	
@@ -719,17 +722,28 @@ public class TileVisualizer extends JPanel {
                             
                             int x = 20 + (col + j) * (tileSize + spacing);
                             
-                            int y = 50 + (row + i) * (tileSize + spacing);
+                            int y = 20 + (row + i) * (tileSize + spacing);
 
                             if (stampTileIndex >= 0 && stampTileIndex < tileImages.length) {
-                               
-                            	BufferedImage stampTileImage = tileImages[stampTileIndex];
+                            	
+                                BufferedImage stampTileImage = tileImages[stampTileIndex];
                                 
-                            	g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, previewTransparency));
-                                
-                            	g2d.drawImage(stampTileImage, x - (int) (getViewPosition().x / getZoomLevel()), y - (int) (getViewPosition().y / getZoomLevel()), tileSize, tileSize, null);
-                                
-                            	g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
+                                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, previewTransparency));
+
+                                if (stampTileIndex >= (tilePaths.length / 2)) {
+                                	
+                                    g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+                                    
+                                    g2d.setColor(new Color(255, 192, 203));
+                                    
+                                    g2d.fillRect(x - (int) (getViewPosition().x / getZoomLevel()), y - (int) (getViewPosition().y / getZoomLevel()), tileSize, tileSize);
+                                    
+                                    g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, previewTransparency));
+                                }
+
+                                g2d.drawImage(stampTileImage, x - (int) (getViewPosition().x / getZoomLevel()), y - (int) (getViewPosition().y / getZoomLevel()), tileSize, tileSize, null);
+
+                                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
                             }
                         }
                     }
@@ -738,16 +752,27 @@ public class TileVisualizer extends JPanel {
                 	
                     int x = 20 + col * (tileSize + spacing);
                     
-                    int y = 50 + row * (tileSize + spacing);
+                    int y = 20 + row * (tileSize + spacing);
 
                     if (selectedTileIndex >= 0 && selectedTileIndex < tileImages.length) {
                     	
                         BufferedImage selectedTileImage = tileImages[selectedTileIndex];
                         
                         g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, previewTransparency));
-                       
+
+                        if (collision) {
+                        	
+                            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+                            
+                            g2d.setColor(new Color(255, 192, 203)); // Pink color
+                            
+                            g2d.fillRect(x - (int) (getViewPosition().x / getZoomLevel()), y - (int) (getViewPosition().y / getZoomLevel()), tileSize, tileSize);
+                            
+                            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, previewTransparency));
+                        }
+
                         g2d.drawImage(selectedTileImage, x - (int) (getViewPosition().x / getZoomLevel()), y - (int) (getViewPosition().y / getZoomLevel()), tileSize, tileSize, null);
-                        
+
                         g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1f));
                     }
                 }
@@ -808,7 +833,18 @@ public class TileVisualizer extends JPanel {
         return map;
     }
 
-
+    public void checkCollision() {
+    	
+    	if (selectedTileIndex >= (tilePaths.length / 2)) {
+    		
+    		collision = true;
+    	}
+    	else {
+    		
+    		collision = false;
+    	}
+    }
+    
     public static int[][] loadMapFromAbsolutePath(String filePath) {
     	
         try {
@@ -992,5 +1028,73 @@ public class TileVisualizer extends JPanel {
     public void setSelectedTileIndex(int i) {
     	
         selectedTileIndex = i;
+    }
+
+    public BufferedImage getMapImage() {
+
+        try {
+        	
+            String path = tilePaths[0];
+            
+            InputStream inputStream = getClass().getResourceAsStream(path);
+            
+            if (inputStream != null) {
+            	
+                originalTileSize = ImageIO.read(inputStream).getWidth();
+            }
+        } 
+        catch (IOException e) {
+        	
+            e.printStackTrace();
+        }
+    	
+        int totalWidth = numCols * originalTileSize;
+        
+        int totalHeight = numRows * originalTileSize;
+
+        BufferedImage mapImage = new BufferedImage(totalWidth, totalHeight, BufferedImage.TYPE_INT_ARGB);
+        
+        Graphics2D g2d = mapImage.createGraphics();
+
+        originalTileImages = new BufferedImage[tilePaths.length];
+        
+        for (int i = 0; i < tilePaths.length; i++) {
+        	
+            try {
+            	
+                String path = tilePaths[i];
+                
+                InputStream inputStream = getClass().getResourceAsStream(path);
+                
+                if (inputStream != null) {
+                	
+                    originalTileImages[i] = ImageIO.read(inputStream);
+                }
+            } 
+            catch (IOException e) {
+            	
+                e.printStackTrace();
+            }
+        }
+        
+        for (int row = 0; row < numRows; row++) {
+        	
+            for (int col = 0; col < numCols; col++) {
+            	
+                int tileIndex = map[row][col];
+                
+                BufferedImage tileImage = originalTileImages[tileIndex];
+                
+                int x = col * originalTileSize;
+                
+                int y = row * originalTileSize;
+                
+                g2d.drawImage(tileImage, x, y, originalTileSize, originalTileSize, null);
+            }
+        }
+
+        g2d.dispose();
+
+        return mapImage;
     }
 }

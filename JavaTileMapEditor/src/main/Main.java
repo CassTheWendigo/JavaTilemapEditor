@@ -14,10 +14,11 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.io.IOException;
 import java.util.Hashtable;
+
+import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.Box;
@@ -25,26 +26,45 @@ import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JRadioButtonMenuItem;
-import javax.swing.JSlider;
-import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
-import javax.swing.WindowConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.filechooser.FileNameExtensionFilter;
+
+import menu.CustomFileChooserRenderer;
+import menu.CustomFrameRenderer;
+import menu.CustomLabelRenderer;
+import menu.CustomMenuBarRenderer;
+import menu.CustomMenuItemRenderer;
+import menu.CustomMenuRenderer;
+import menu.CustomOptionPaneRenderer;
+import menu.CustomPanelRenderer;
+import menu.CustomRadioButtonMenuItemRenderer;
+import menu.CustomSliderRenderer;
+import menu.CustomTextFieldRenderer;
+import stamps.StampCreationTool;
+import stamps.StampTool;
 
 public class Main {
 	
+
     public static void main(String[] args) {
     	
-        JFrame frame = new JFrame("TheCasualWendigo's Tile Editor");
+        SwingUtilities.invokeLater(() -> {
+        	
+            createAndShowGUI();
+        });
+    }
+    
+    public static void createAndShowGUI() {
     	
+        CustomFrameRenderer frame = new CustomFrameRenderer("TheCasualWendigo's Tile Editor");
+    	
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        
         TileVisualizer.setInitialFolders(TileVisualizer.getInitialFolders("res/tiles/"));
 
         String[] tilePaths = TileVisualizer.generateTilePaths(TileVisualizer.getInitialFolders());
@@ -52,6 +72,19 @@ public class Main {
         int[][] map = TileVisualizer.createMap(50, 50);
         
         TileVisualizer visualizer = new TileVisualizer(tilePaths, map, 0, 0, null);
+        
+        visualizer.setVisible(true);
+        
+    	setupMenus(frame, visualizer);
+        
+    	frame.add(visualizer);
+    	
+        frame.setVisible(true);
+    }
+    
+    public static void setupMenus(CustomFrameRenderer frame, TileVisualizer visualizer) {
+    	
+    	frame.setBackground(new Color(211, 203, 190));
 
         StampTool stampTool = new StampTool();
 
@@ -69,7 +102,7 @@ public class Main {
 
         contextMenu.stampCreationTool = stampCreationTool;
         
-        JMenuBar menuBar = new JMenuBar();
+        CustomMenuBarRenderer menuBar = new CustomMenuBarRenderer();
 
         menuBar.addMouseListener(new MouseAdapter() {
         	
@@ -86,46 +119,17 @@ public class Main {
             }
         });
         
-        JMenu fileMenu = new JMenu("File");
-        
-        JMenuItem saveMenuItem = new JMenuItem("Save");
-        
-        saveMenuItem.addActionListener(e -> {
-        	
-            String filePath = (visualizer.isFileOpen && visualizer.mapFilePath != null) ? visualizer.mapFilePath : "res/maps/map0.txt";
-            
-            visualizer.saveMapToFile(filePath);
-        });
-        
-        fileMenu.add(saveMenuItem);
+        CustomMenuRenderer fileMenu = new CustomMenuRenderer("File", 211, 203, 190);
 
-        JMenuItem saveAsMenuItem = new JMenuItem("Save As");
-
-        saveAsMenuItem.addActionListener(e -> {
-        	
-            JFileChooser fileChooser = new JFileChooser(new File("res"));
-            
-            int returnValue = fileChooser.showSaveDialog(null);
-            
-            if (returnValue == JFileChooser.APPROVE_OPTION) {
-            	
-                File selectedFile = fileChooser.getSelectedFile();
-                
-                visualizer.saveMapToFile(selectedFile.getAbsolutePath());
-            }
-        });
+        CustomMenuItemRenderer openMenuItem = new CustomMenuItemRenderer("Open Map");
         
-        fileMenu.add(saveAsMenuItem);
-
-        JMenuItem openMenuItem = new JMenuItem("Open Map");
-        
-
         openMenuItem.addActionListener(e -> {
-            JFileChooser fileChooser = new JFileChooser(new File("res"));
+        	
+            CustomFileChooserRenderer fileChooser = new CustomFileChooserRenderer(new File("res"));
             
             int returnValue = fileChooser.showOpenDialog(null);
             
-            if (returnValue == JFileChooser.APPROVE_OPTION) {
+            if (returnValue == CustomFileChooserRenderer.APPROVE_OPTION) {
             	
                 File selectedFile = fileChooser.getSelectedFile();
                 
@@ -153,74 +157,116 @@ public class Main {
                 } 
                 else {
                 	
-                    JOptionPane.showMessageDialog(null, "Error loading map from file.", "Error", JOptionPane.ERROR_MESSAGE);
+                    CustomOptionPaneRenderer.showMessageDialog(null, "Error loading map from file.", "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
-        
+
         fileMenu.add(openMenuItem);
 
-        JMenuItem createMapMenuItem = new JMenuItem("Create Map");
-        
+        CustomMenuItemRenderer createMapMenuItem = new CustomMenuItemRenderer("Create Map");
+
         createMapMenuItem.addActionListener(new ActionListener() {
-        	
+
             @Override
             public void actionPerformed(ActionEvent e) {
             	
-                JTextField xField = new JTextField(5);
+                CustomTextFieldRenderer xField = new CustomTextFieldRenderer(5, 52, 37, 47, 255, 255, 255);
                 
-                JTextField yField = new JTextField(5);
+                CustomTextFieldRenderer yField = new CustomTextFieldRenderer(5, 52, 37, 47, 255, 255, 255);
+                
+                CustomPanelRenderer createMapPanel = new CustomPanelRenderer();
 
-                JPanel createMapPanel = new JPanel();
-
-                createMapPanel.add(new JLabel("Enter map width (x):"));
+                createMapPanel.add(new CustomLabelRenderer("Enter map width:"));
                 
                 createMapPanel.add(xField);
                 
                 createMapPanel.add(Box.createHorizontalStrut(15));
                 
-                createMapPanel.add(new JLabel("Enter map height (y):"));
+                createMapPanel.add(new CustomLabelRenderer("Enter map height:"));
                 
                 createMapPanel.add(yField);
 
-                JOptionPane.showConfirmDialog(null, createMapPanel, "Please enter X and Y values", JOptionPane.OK_CANCEL_OPTION);
+                int result = CustomOptionPaneRenderer.showConfirmDialog(null, createMapPanel, "Please enter X and Y values", CustomOptionPaneRenderer.OK_CANCEL_OPTION);
 
-                try {
+                if (result == CustomOptionPaneRenderer.OK_OPTION) {
                 	
-                    int sizeX = Integer.parseInt(xField.getText());
-                    
-                    int sizeY = Integer.parseInt(yField.getText());
-                    
-                    visualizer.setMap(TileVisualizer.createMap(sizeX, sizeY));
-                    
-                    visualizer.setCurrentMapState(visualizer.copyMap(visualizer.getMap()));
-                    
-                    visualizer.numCols = sizeX;
-                    
-                    visualizer.numRows = sizeY;
-                    
-                    visualizer.isFileOpen = false;
-                    
-                    visualizer.setViewPosition(new Point(0, 0));
-                    
-                    visualizer.setZoomLevel(1);
-                    
-                    visualizer.repaint();
-                } 
-                catch (NumberFormatException ex) {
-                	
-                    JOptionPane.showMessageDialog(null, "Invalid input. Please enter valid numbers.", "Error", JOptionPane.ERROR_MESSAGE);
+                    try {
+                    	
+                        int sizeX = Integer.parseInt(xField.getText());
+                        
+                        int sizeY = Integer.parseInt(yField.getText());
+                        
+                        visualizer.setMap(TileVisualizer.createMap(sizeX, sizeY));
+                        
+                        visualizer.setCurrentMapState(visualizer.copyMap(visualizer.getMap()));
+                        
+                        visualizer.numCols = sizeX;
+                        
+                        visualizer.numRows = sizeY;
+                        
+                        visualizer.isFileOpen = false;
+                        
+                        visualizer.setViewPosition(new Point(0, 0));
+                        
+                        visualizer.setZoomLevel(1);
+                        
+                        visualizer.repaint();
+                        
+                    } 
+                    catch (NumberFormatException ex) {
+                    	
+                        CustomOptionPaneRenderer.showMessageDialog(null, "Invalid input. Please enter valid numbers.", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
                 }
             }
         });
-        
+
         fileMenu.add(createMapMenuItem);
+        
+        CustomMenuItemRenderer saveMenuItem = new CustomMenuItemRenderer("Save");
+        
+        saveMenuItem.addActionListener(e -> {
+        	
+            String filePath = (visualizer.isFileOpen && visualizer.mapFilePath != null) ? visualizer.mapFilePath : "res/maps/map0.txt";
+            
+            visualizer.saveMapToFile(filePath);
+        });
+        
+        fileMenu.add(saveMenuItem);
+
+        CustomMenuItemRenderer saveAsMenuItem = new CustomMenuItemRenderer("Save As");
+
+        saveAsMenuItem.addActionListener(e -> {
+        	
+            CustomFileChooserRenderer fileChooser = new CustomFileChooserRenderer(new File("res"));
+            
+            int returnValue = fileChooser.showSaveDialog(null);
+            
+            if (returnValue == JFileChooser.APPROVE_OPTION) {
+            	
+                File selectedFile = fileChooser.getSelectedFile();
+                
+                visualizer.saveMapToFile(selectedFile.getAbsolutePath());
+            }
+        });
+
+        fileMenu.add(saveAsMenuItem);
+
+        CustomMenuItemRenderer exportMenuItem = new CustomMenuItemRenderer("Export Image");
+        
+        exportMenuItem.addActionListener(e -> {
+        	
+            exportMapAsImage(visualizer);
+        });
+        
+        fileMenu.add(exportMenuItem);
 
         menuBar.add(fileMenu);
 
-        JMenu viewMenu = new JMenu("View");
+        CustomMenuRenderer viewMenu = new CustomMenuRenderer("View", 211, 203, 190);
         
-        JMenuItem resetViewMenuItem = new JMenuItem("Reset View");
+        CustomMenuItemRenderer resetViewMenuItem = new CustomMenuItemRenderer("Reset View");
         
         resetViewMenuItem.addActionListener(new ActionListener() {
         	
@@ -235,7 +281,7 @@ public class Main {
         
         viewMenu.add(resetViewMenuItem);
         
-        JMenuItem resetPositionMenuItem = new JMenuItem("Reset Position");
+        CustomMenuItemRenderer resetPositionMenuItem = new CustomMenuItemRenderer("Reset Pos.");
         
         resetPositionMenuItem.addActionListener(new ActionListener() {
         	
@@ -249,7 +295,7 @@ public class Main {
         
         viewMenu.add(resetPositionMenuItem);
         
-        JMenuItem resetZoomMenuItem = new JMenuItem("Reset Zoom");
+        CustomMenuItemRenderer resetZoomMenuItem = new CustomMenuItemRenderer("Reset Zoom");
         
         resetZoomMenuItem.addActionListener(new ActionListener() {
         	
@@ -263,7 +309,7 @@ public class Main {
         
         viewMenu.add(resetZoomMenuItem);
         
-        JMenuItem zoomInMenuItem = new JMenuItem("Zoom +");
+        CustomMenuItemRenderer zoomInMenuItem = new CustomMenuItemRenderer("Zoom +");
         
         zoomInMenuItem.addActionListener(new ActionListener() {
         	
@@ -277,7 +323,7 @@ public class Main {
         
         viewMenu.add(zoomInMenuItem);
         
-        JMenuItem zoomOutMenuItem = new JMenuItem("Zoom -");
+        CustomMenuItemRenderer zoomOutMenuItem = new CustomMenuItemRenderer("Zoom -");
         
         zoomOutMenuItem.addActionListener(new ActionListener() {
         	
@@ -293,9 +339,9 @@ public class Main {
         
         menuBar.add(viewMenu);
         
-        JMenu brushMenu = new JMenu("Brush");
+        CustomMenuRenderer brushMenu = new CustomMenuRenderer("Brush", 211, 203, 190);
 
-        JRadioButtonMenuItem previewMenuItem = new JRadioButtonMenuItem("Toggle Preview");
+        CustomRadioButtonMenuItemRenderer previewMenuItem = new CustomRadioButtonMenuItemRenderer("Toggle Preview");
 
         previewMenuItem.setSelected(visualizer.showPreview);
         
@@ -307,12 +353,51 @@ public class Main {
                 visualizer.showPreview = !visualizer.showPreview;
                 
                 visualizer.repaint();
+                
+                previewMenuItem.repaint();
             }
         });
 
         brushMenu.add(previewMenuItem);
+        
+        CustomRadioButtonMenuItemRenderer collisionMenuItem = new CustomRadioButtonMenuItemRenderer("Toggle Collision");
 
-        JRadioButtonMenuItem stampMenuItem = new JRadioButtonMenuItem("Toggle Stamp");
+        collisionMenuItem.setSelected(visualizer.collision);
+        
+        collisionMenuItem.addActionListener(new ActionListener() {
+        	
+            @Override
+            public void actionPerformed(ActionEvent e) {
+            	
+                visualizer.collision = !visualizer.collision;
+                
+                if (visualizer.collision) {
+                	
+                	visualizer.selectedTileIndex = visualizer.selectedTileIndex + (visualizer.tilePaths.length / 2);
+                	
+                	visualizer.updateSelectedTileIcon();
+                }
+                else {
+                	
+                	visualizer.selectedTileIndex = visualizer.selectedTileIndex - (visualizer.tilePaths.length / 2);
+                	
+                	visualizer.updateSelectedTileIcon();
+                }
+            	
+                visualizer.repaint();
+                
+                if (visualizer.subMenu != null) {
+                	
+                	visualizer.contextMenu.updateSubMenu(visualizer.contextMenu.currentFolder);                	
+                }
+                
+                collisionMenuItem.repaint();
+            }
+        });
+
+        brushMenu.add(collisionMenuItem);
+
+        CustomRadioButtonMenuItemRenderer stampMenuItem = new CustomRadioButtonMenuItemRenderer("Toggle Stamp");
         
         stampMenuItem.setSelected(visualizer.stampToolActive);
         
@@ -335,12 +420,14 @@ public class Main {
                 stampMenuItem.setSelected(visualizer.stampToolActive);
                 
                 visualizer.repaint();
+                
+                stampMenuItem.repaint();
             }
         });
         
         brushMenu.add(stampMenuItem);
 
-        JMenuItem openStampToolMenuItem = new JMenuItem("Open Stamp Creation Tool");
+        CustomMenuItemRenderer openStampToolMenuItem = new CustomMenuItemRenderer("Open Stamp Creation Tool");
         
         openStampToolMenuItem.addActionListener(new ActionListener() {
         	
@@ -353,7 +440,7 @@ public class Main {
         
         brushMenu.add(openStampToolMenuItem);
 
-        JPanel transparencyPanel = new JPanel(new GridBagLayout());
+        CustomPanelRenderer transparencyPanel = new CustomPanelRenderer(new GridBagLayout(), 211, 203, 190);
         
         GridBagConstraints gbc = new GridBagConstraints();
         
@@ -361,7 +448,7 @@ public class Main {
         
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        JLabel transparencyLabel = new JLabel("Preview Transparency");
+        CustomLabelRenderer transparencyLabel = new CustomLabelRenderer("Preview Transparency");
         
         transparencyLabel.setHorizontalAlignment(SwingConstants.LEFT);
         
@@ -373,7 +460,7 @@ public class Main {
         
         transparencyPanel.add(transparencyLabel, gbc);
 
-        JSlider transparencySlider = new JSlider(0, 100, 50); 
+        CustomSliderRenderer transparencySlider = new CustomSliderRenderer(0, 100, 50); 
         
         transparencySlider.setMajorTickSpacing(50);
         
@@ -416,7 +503,7 @@ public class Main {
 
         menuBar.add(brushMenu);
 
-        JMenuItem selectedTileMenuItem = new JMenuItem() {
+        CustomMenuItemRenderer selectedTileMenuItem = new CustomMenuItemRenderer() {
         	
             private static final long serialVersionUID = 1L;
 
@@ -425,12 +512,19 @@ public class Main {
             	
                 super.paint(g);
 
-                String labelText = "Selected Tile: " + visualizer.selectedTileIndex + " ";
+                String labelText;
+                
+                if (visualizer.collision) {
+                    labelText = "Selected Tile: " + (visualizer.selectedTileIndex - visualizer.tilePaths.length / 2) + " Collision";
+                }
+                else {
+                    labelText = "Selected Tile: " + visualizer.selectedTileIndex + " ";
+                }
                 
                 BufferedImage iconImage = visualizer.getSelectedTileIcon();
 
                 if (iconImage != null) {
-                	
+
                     FontMetrics fontMetrics = g.getFontMetrics();
                     
                     int textWidth = fontMetrics.stringWidth(labelText);
@@ -458,19 +552,38 @@ public class Main {
             @Override
             public Dimension getPreferredSize() {
             	
-                String labelText = "Selected Tile: " + visualizer.selectedTileIndex + " ";
-                
-                BufferedImage iconImage = visualizer.getSelectedTileIcon();
-                
-                FontMetrics fontMetrics = getFontMetrics(getFont());
-                
-                int textWidth = fontMetrics.stringWidth(labelText);
-                
-                int iconWidth = (iconImage != null) ? iconImage.getWidth() : 0;
-                
-                int totalWidth = textWidth + iconWidth + 20;
-                
-                return new Dimension(totalWidth, super.getPreferredSize().height);
+            	if (visualizer.collision) {
+            		
+                    String labelText = "Selected Tile: " + (visualizer.selectedTileIndex - visualizer.tilePaths.length) + "Collision";
+                    
+                    BufferedImage iconImage = visualizer.getSelectedTileIcon();
+                    
+                    FontMetrics fontMetrics = getFontMetrics(getFont());
+                    
+                    int textWidth = fontMetrics.stringWidth(labelText);
+                    
+                    int iconWidth = (iconImage != null) ? iconImage.getWidth() : 0;
+                    
+                    int totalWidth = textWidth + iconWidth + 20;
+                    
+                    return new Dimension(totalWidth, super.getPreferredSize().height);
+            	}
+            	else {
+            		
+                    String labelText = "Selected Tile: " + visualizer.selectedTileIndex + "Collision";
+                    
+                    BufferedImage iconImage = visualizer.getSelectedTileIcon();
+                    
+                    FontMetrics fontMetrics = getFontMetrics(getFont());
+                    
+                    int textWidth = fontMetrics.stringWidth(labelText);
+                    
+                    int iconWidth = (iconImage != null) ? iconImage.getWidth() : 0;
+                    
+                    int totalWidth = textWidth + iconWidth + 20;
+                    
+                    return new Dimension(totalWidth, super.getPreferredSize().height);
+            	}
             }
         };
 
@@ -497,7 +610,7 @@ public class Main {
             	
                 visualizer.updateSelectedTileIcon();
                 
-                visualizer.repaint();
+                visualizer.repaint();	 
                 
                 selectedTileMenuItem.repaint();
             }
@@ -512,16 +625,28 @@ public class Main {
                 selectedTileMenuItem.repaint();
             }
         });
-
+        
         Action decrementAction = new AbstractAction() {
         	
-			private static final long serialVersionUID = 1L;
+            private static final long serialVersionUID = 1L;
 
-			@Override
+            @Override
             public void actionPerformed(ActionEvent e) {
             	
-                visualizer.selectedTileIndex = (visualizer.selectedTileIndex - 1 + tilePaths.length) % tilePaths.length;
-                
+                if (visualizer.collision) {
+
+                    visualizer.selectedTileIndex = (visualizer.selectedTileIndex - 1 + (visualizer.tilePaths.length / 2)) % visualizer.tilePaths.length;
+                    
+                    if (visualizer.selectedTileIndex < visualizer.tilePaths.length / 2) {
+                        
+                    	visualizer.selectedTileIndex += visualizer.tilePaths.length / 2;
+                    }
+                } 
+                else {
+
+                    visualizer.selectedTileIndex = (visualizer.selectedTileIndex - 1 + (visualizer.tilePaths.length / 2)) % (visualizer.tilePaths.length / 2);
+                }
+
                 visualizer.updateSelectedTileIcon();
                 
                 visualizer.repaint();
@@ -532,13 +657,25 @@ public class Main {
 
         Action incrementAction = new AbstractAction() {
         	
-			private static final long serialVersionUID = 1L;
+            private static final long serialVersionUID = 1L;
 
-			@Override
+            @Override
             public void actionPerformed(ActionEvent e) {
             	
-                visualizer.selectedTileIndex = (visualizer.selectedTileIndex + 1) % tilePaths.length;
-                
+                if (visualizer.collision) {
+
+                    visualizer.selectedTileIndex = (visualizer.selectedTileIndex + 1) % visualizer.tilePaths.length;
+                    
+                    if (visualizer.selectedTileIndex < visualizer.tilePaths.length / 2) {
+                       
+                    	visualizer.selectedTileIndex += visualizer.tilePaths.length / 2;
+                    }
+                } 
+                else {
+
+                    visualizer.selectedTileIndex = (visualizer.selectedTileIndex + 1) % (visualizer.tilePaths.length / 2);
+                }
+
                 visualizer.updateSelectedTileIcon();
                 
                 visualizer.repaint();
@@ -607,36 +744,69 @@ public class Main {
         
         visualizer.getActionMap().put("redo", redoAction);
 
-        visualizer.addPropertyChangeListener(new PropertyChangeListener() {
-        	
-            @Override
-            public void propertyChange(PropertyChangeEvent evt) {
-            	
-                if (evt.getPropertyName().equals("selectedTileIndex")) {
-                	
-                    String labelText = "Selected Tile: " + evt.getNewValue() + " ";
-                    
-                    selectedTileMenuItem.setText(labelText);
-                    
-                    visualizer.updateSelectedTileIcon();
-                    
-                    selectedTileMenuItem.repaint();
-                    
-                    visualizer.repaint();
-                }
-            }
-        });
-
         frame.setJMenuBar(menuBar);
+    }
+    
+    public static void exportMapAsImage(TileVisualizer visualizer) {
+    	
+        CustomFileChooserRenderer fileChooser = new CustomFileChooserRenderer();
         
-        visualizer.setBackground(new Color(40, 43, 48));
+        fileChooser.setDialogTitle("Export Map as Image");
         
-        frame.add(visualizer);
+        fileChooser.setFileFilter(new FileNameExtensionFilter("PNG Images", "png"));
+
+        int userSelection = fileChooser.showSaveDialog(null);
         
-        frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        if (userSelection == CustomFileChooserRenderer.APPROVE_OPTION) {
+        	
+            File selectedFile = fileChooser.getSelectedFile();
+            
+            String fileName = selectedFile.getName();
+            
+            String parentDir = selectedFile.getParent();
+
+            File parentDirectory = new File(parentDir);
+            
+            if (!parentDirectory.exists() || !parentDirectory.isDirectory()) {
+                
+            	CustomOptionPaneRenderer.showMessageDialog(null, "Invalid directory.", "Error", JOptionPane.ERROR_MESSAGE);
+                
+                return;
+            }
+
+            String fullPath = parentDir + File.separator + fileName + ".png";
+
+            if (new File(fullPath).exists()) {
+            	
+                int result = CustomOptionPaneRenderer.showConfirmDialog(null, "A file with the same name and type already exists. Do you want to overwrite it?", "File exists", JOptionPane.YES_NO_OPTION);
+
+                if (result == CustomOptionPaneRenderer.YES_OPTION) {
+                	
+                    exportMapImage(selectedFile, visualizer, "png");
+                }
+            } 
+            else {
+            	
+                exportMapImage(selectedFile, visualizer, "png");
+            }
+        }
+    }
+
+    private static void exportMapImage(File selectedFile, TileVisualizer visualizer, String extension) {
         
-        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        
-        frame.setVisible(true);
+    	String filePath = selectedFile.getAbsolutePath();
+    	
+        BufferedImage mapImage = visualizer.getMapImage();
+
+        try {
+        	
+            ImageIO.write(mapImage, extension, new File(filePath + "." + extension));
+            
+            CustomOptionPaneRenderer.showMessageDialog(null, "Map exported successfully as image.", "Export Successful", JOptionPane.INFORMATION_MESSAGE);
+        } 
+        catch (IOException ex) {
+        	
+            CustomOptionPaneRenderer.showMessageDialog(null, "Error exporting map as image: " + ex.getMessage(), "Export Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }

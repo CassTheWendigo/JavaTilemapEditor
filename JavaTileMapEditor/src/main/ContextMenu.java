@@ -1,8 +1,12 @@
 package main;
 
 import javax.swing.*;
-import javax.swing.event.PopupMenuEvent;
-import javax.swing.event.PopupMenuListener;
+import menu.CustomMenuItemRenderer;
+import menu.CustomPanelRenderer;
+import menu.CustomPopupMenuRenderer;
+import menu.CustomScrollPaneRenderer;
+import stamps.StampCreationTool;
+
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -13,43 +17,25 @@ public class ContextMenu {
 
     private TileVisualizer tileVisualizer;
     
-    private JPopupMenu contextMenu;
+    private CustomPopupMenuRenderer contextMenu;
     
     private boolean subMenuCreated = false;
     
-    JMenuItem selectedTileMenuItem;
+    CustomMenuItemRenderer selectedTileMenuItem;
     
     StampCreationTool stampCreationTool;
+    
+    String currentFolder;
 
     public ContextMenu(TileVisualizer tileVisualizer) {
     	
+    	contextMenu = new CustomPopupMenuRenderer();
+    	
         this.tileVisualizer = tileVisualizer;
-        
-        contextMenu = new JPopupMenu();
-        
-        contextMenu.addPopupMenuListener(new PopupMenuListener() {
-        	
-            @Override
-            public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
-            	
-                tileVisualizer.isContextMenuVisible = true;
-            }
 
-            @Override
-            public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
-            	
-                tileVisualizer.isContextMenuVisible = false;
-            }
-
-            @Override
-            public void popupMenuCanceled(PopupMenuEvent e) {
-            	
-                tileVisualizer.isContextMenuVisible = false;
-            }
-        });
-
-        // Add mouse listener to handle mouse events for showing context menu
         tileVisualizer.addMouseListener(createMouseListener());
+        
+        contextMenu.addMouseListener(createContextMenuMouseListener());
     }
 
     MouseAdapter createMouseListener() {
@@ -67,6 +53,24 @@ public class ContextMenu {
         };
     }
 
+    MouseAdapter createContextMenuMouseListener() {
+    	
+    	return new MouseAdapter() {
+    		
+            @Override
+            public void mouseEntered(MouseEvent e) {
+
+            	tileVisualizer.isInContextMenu = true;
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+
+            	tileVisualizer.isInContextMenu = false;
+            }
+    	};
+    }
+    
     public void showContextMenu(MouseEvent e) {
     	
         int mouseX = e.getX();
@@ -77,13 +81,13 @@ public class ContextMenu {
         
         int row = (mouseY - 50) / (int) (tileVisualizer.tileSize * tileVisualizer.getZoomLevel() + tileVisualizer.spacing);
 
-        if (!tileVisualizer.isContextMenuVisible && col >= 0 && col < tileVisualizer.numCols && row >= 0 && row < tileVisualizer.numRows) {
+        if (!tileVisualizer.isInContextMenu && col >= 0 && col < tileVisualizer.numCols && row >= 0 && row < tileVisualizer.numRows) {
 
             contextMenu.removeAll();
 
             for (String folder : TileVisualizer.getInitialFolders()) {
             	
-                JMenuItem folderMenuItem = new JMenuItem(folder);
+                CustomMenuItemRenderer folderMenuItem = new CustomMenuItemRenderer(folder);
                 
                 folderMenuItem.addActionListener(ev -> {
 
@@ -143,67 +147,132 @@ public class ContextMenu {
         if (contextMenu != null && contextMenu.isVisible()) {
         	
             contextMenu.setVisible(false);
-            
-            tileVisualizer.isContextMenuVisible = false;
-            
+
             tileVisualizer.repaint();
         }
     }
 
-    JPopupMenu createSubMenu() {
+    CustomPopupMenuRenderer createSubMenu() {
     	
-        JPopupMenu subMenu = new JPopupMenu();
+    	CustomPopupMenuRenderer subMenu = new CustomPopupMenuRenderer();
         
         subMenu.setPreferredSize(new Dimension(200, 300));
         
-        JScrollPane scrollPane = new JScrollPane();
+        CustomScrollPaneRenderer scrollPane = new CustomScrollPaneRenderer();
         
         subMenu.add(scrollPane);
+        
+        subMenu.addMouseListener(createContextMenuMouseListener());
         
         return subMenu;
     }
 
     void updateSubMenu(String folder) {
     	
-        JViewport viewport = ((JScrollPane) tileVisualizer.subMenu.getComponent(0)).getViewport();
+        CustomScrollPaneRenderer scrollPane = (CustomScrollPaneRenderer) tileVisualizer.subMenu.getComponent(0);
+        
+        JViewport viewport = scrollPane.getViewport();
         
         viewport.removeAll();
+
+        CustomPanelRenderer menuPanel = new CustomPanelRenderer();
+       
+        menuPanel.setLayout(new BoxLayout(menuPanel, BoxLayout.Y_AXIS));
 
         Map<String, List<Integer>> folderMap = tileVisualizer.createFolderMap(tileVisualizer.tilePaths);
         
         List<Integer> indices = folderMap.get(folder);
 
+        currentFolder = folder;
+        
         if (indices != null) {
-        	
-            JPanel menuPanel = new JPanel();
-            
-            menuPanel.setLayout(new BoxLayout(menuPanel, BoxLayout.Y_AXIS));
+
+            int initialTileCount = tileVisualizer.tilePaths.length / 2;
 
             for (int index : indices) {
             	
-                JMenuItem menuItem = new JMenuItem("Tile " + index);
-                
-                menuItem.setIcon(new ImageIcon(tileVisualizer.tileImages[index].getScaledInstance(16, 16, Image.SCALE_DEFAULT)));
-                
-                menuItem.addActionListener(ev -> {
-                	
-                    tileVisualizer.selectedTileIndex = index;
-                    
-                    tileVisualizer.updateSelectedTileIcon();
-                    
-                    selectedTileMenuItem.repaint();
-                    
-                    stampCreationTool.gridPanel.repaint();
-                    
-                    tileVisualizer.repaint();
-                });
-                
-                menuPanel.add(menuItem);
-            }
+                if (tileVisualizer.collision) {
 
-            JScrollPane scrollPane = (JScrollPane) tileVisualizer.subMenu.getComponent(0);
-            
-            scrollPane.setViewportView(menuPanel);
+                    if (index >= initialTileCount) {
+                    	
+                        String menuItemText = "Tile " + (index - (tileVisualizer.tilePaths.length / 2)) + " Collision";
+                        
+                        CustomMenuItemRenderer menuItem = new CustomMenuItemRenderer(menuItemText);
+
+                        if (index >= 0 && index < tileVisualizer.tileImages.length && tileVisualizer.tileImages[index] != null) {
+                            
+                        	ImageIcon icon = new ImageIcon(tileVisualizer.tileImages[index].getScaledInstance(16, 16, Image.SCALE_DEFAULT));
+                            
+                        	menuItem.setIcon(icon);
+                        } 
+                        else {
+                        	
+                            System.err.println("No image found for index: " + index);
+                        }
+
+                        menuItem.addActionListener(ev -> {
+                        	
+                            tileVisualizer.selectedTileIndex = index;
+                            
+                            tileVisualizer.collision = true;
+                            
+                            tileVisualizer.updateSelectedTileIcon();
+                            
+                            selectedTileMenuItem.repaint();
+                            
+                            stampCreationTool.gridPanel.repaint();
+                            
+                            tileVisualizer.repaint();
+                        });
+
+                        menuPanel.add(menuItem);
+                    }
+                } 
+                else {
+
+                    if (index < initialTileCount) {
+                    	
+                        String menuItemText = "Tile " + index;
+                        
+                        CustomMenuItemRenderer menuItem = new CustomMenuItemRenderer(menuItemText);
+
+                        if (index >= 0 && index < tileVisualizer.tileImages.length && tileVisualizer.tileImages[index] != null) {
+                            
+                        	ImageIcon icon = new ImageIcon(tileVisualizer.tileImages[index].getScaledInstance(16, 16, Image.SCALE_DEFAULT));
+                            
+                        	menuItem.setIcon(icon);
+                        } 
+                        else {
+                        	
+                            System.err.println("No image found for index: " + index);
+                        }
+
+                        menuItem.addActionListener(ev -> {
+                        	
+                            tileVisualizer.selectedTileIndex = index;
+                            
+                            tileVisualizer.collision = false;
+                            
+                            tileVisualizer.updateSelectedTileIcon();
+                            
+                            selectedTileMenuItem.repaint();
+                            
+                            stampCreationTool.gridPanel.repaint();
+                            
+                            tileVisualizer.repaint();
+                        });
+
+                        menuPanel.add(menuItem);
+                    }
+                }
+            }
         }
+
+        viewport.setView(menuPanel);
+        
+        scrollPane.revalidate();
+        
+        scrollPane.repaint();
     }
+
 }
