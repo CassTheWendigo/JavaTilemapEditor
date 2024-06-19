@@ -24,10 +24,11 @@ Tiles should be placed within the /res/tiles/ folder. Folders of tiles can be pl
 ## Menus / Indirect Interactions
 
 1. <ins>File Menu</ins>
-    - Save - Saves the current map data to the currently opened map file.
-    - Save As - Saves the current map with the provided file name in the provided location.
     - Open Map - Opens the selected map, and displays its data. Resets the zoom and map position.
     - Create Map - Creates a new map with the provided dimensions. Resets the zoom and map position.
+    - Save - Saves the current map data to the currently opened map file.
+    - Save As - Saves the current map with the provided file name in the provided location.
+    - Export Image - Compiles the drawn tiles into a .PNG image, automatically detecting tile and image size.
 
 2. <ins>Brush Menu</ins>
     - Toggle Preview - Toggles whether or not a preview will be displayed.
