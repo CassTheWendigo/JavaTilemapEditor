@@ -241,7 +241,7 @@ public class TileVisualizer extends CustomPanelRenderer {
                 
                 if (col >= 0 && col < numCols && row >= 0 && row < numRows) {
                     
-                	if (stampTool.isActive() && stampTool.getStampPattern(stampTool.currentStampIndex) != null && !isInMenu()) {
+                	if (stampTool.isActive() && stampTool.getStampPattern(stampTool.currentStampIndex) != null) {
                         
                 		int[][] stamp = stampTool.getStampPattern(stampTool.currentStampIndex);
                 		
@@ -541,29 +541,6 @@ public class TileVisualizer extends CustomPanelRenderer {
         List<String> paths = new ArrayList<>();
 
         String tilesFolderPath = "res" + File.separator + "tiles" + File.separator;
-
-        File mainTilesFolder = new File(tilesFolderPath);
-
-        File[] mainTileFiles = mainTilesFolder.listFiles((dir, name) -> name.toLowerCase().endsWith(".png"));
-
-        if (mainTileFiles != null) {
-        	
-            Arrays.sort(mainTileFiles, Comparator.comparing(File::getName, new AlphanumericComparator()));
-
-            for (File tileFile : mainTileFiles) {
-            	
-                String relativePath = "/tiles/" + tileFile.getName();
-                
-                paths.add(relativePath);
-            }
-
-            for (File tileFile : mainTileFiles) {
-            	
-                String relativePath = "/tiles/" + tileFile.getName();
-                
-                paths.add(relativePath);
-            }
-        }
 
         for (int pass = 0; pass < 2; pass++) {
         	
