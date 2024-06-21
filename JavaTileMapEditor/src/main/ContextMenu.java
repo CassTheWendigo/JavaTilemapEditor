@@ -274,5 +274,4 @@ public class ContextMenu {
         
         scrollPane.repaint();
     }
-
 }

@@ -552,7 +552,7 @@ public class TileVisualizer extends CustomPanelRenderer {
 
                 if (tileFiles != null) {
                 	
-                    Arrays.sort(tileFiles, Comparator.comparing(File::getName, new AlphanumericComparator()));
+                    Arrays.sort(tileFiles, new AlphanumericComparator());
 
                     for (File tileFile : tileFiles) {
                     	
@@ -567,40 +567,24 @@ public class TileVisualizer extends CustomPanelRenderer {
         return paths.toArray(new String[0]);
     }
 
-    static class AlphanumericComparator implements Comparator<String> {
-    	
-        final String ALPHA_NUMERIC_REGEX = "(?<=\\D)(?=\\d)|(?<=\\d)(?=\\D)";
+
+    static class AlphanumericComparator implements Comparator<File> {
 
         @Override
-        public int compare(String s1, String s2) {
-        	
-            String[] parts1 = s1.split(ALPHA_NUMERIC_REGEX);
-            
-            String[] parts2 = s2.split(ALPHA_NUMERIC_REGEX);
+        public int compare(File f1, File f2) {
 
-            int minParts = Math.min(parts1.length, parts2.length);
+            String s1 = removeExtension(f1.getName());
             
-            for (int i = 0; i < minParts; i++) {
-            	
-                if (!parts1[i].equals(parts2[i])) {
-                	
-                    if (isNumeric(parts1[i]) && isNumeric(parts2[i])) {
-                    	
-                        return Integer.compare(Integer.parseInt(parts1[i]), Integer.parseInt(parts2[i]));
-                    } 
-                    else {
+            String s2 = removeExtension(f2.getName());
 
-                        return parts1[i].compareTo(parts2[i]);
-                    }
-                }
-            }
-            
-            return parts1.length - parts2.length;
+            return Integer.compare(Integer.parseInt(s1), Integer.parseInt(s2));
         }
 
-        boolean isNumeric(String str) {
+        private String removeExtension(String filename) {
         	
-            return str.matches("\\d+");
+            int dotIndex = filename.lastIndexOf('.');
+            
+            return (dotIndex == -1) ? filename : filename.substring(0, dotIndex);
         }
     }
 
